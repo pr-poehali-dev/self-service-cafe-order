@@ -1,6 +1,7 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { MenuItem, CartItem, Order, Screen } from '@/types/cafe';
-import { INITIAL_MENU, KITCHEN_PASSWORD } from '@/data/menuData';
+import { KITCHEN_PASSWORD } from '@/data/menuData';
+import * as api from '@/api/cafe';
 import MenuScreen from '@/components/cafe/MenuScreen';
 import CartScreen from '@/components/cafe/CartScreen';
 import StatusScreen from '@/components/cafe/StatusScreen';
@@ -11,11 +12,28 @@ import Icon from '@/components/ui/icon';
 
 export default function Index() {
   const [screen, setScreen] = useState<Screen>('menu');
-  const [menu, setMenu] = useState<MenuItem[]>(INITIAL_MENU);
+  const [menu, setMenu] = useState<MenuItem[]>([]);
+  const [menuLoading, setMenuLoading] = useState(true);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [currentOrder, setCurrentOrder] = useState<Order | null>(null);
   const [kitchenAuth, setKitchenAuth] = useState(false);
+  const [placingOrder, setPlacingOrder] = useState(false);
+
+  useEffect(() => {
+    api.fetchMenu().then(items => {
+      setMenu(items);
+      setMenuLoading(false);
+    }).catch(() => setMenuLoading(false));
+  }, []);
+
+  useEffect(() => {
+    if (!kitchenAuth) return;
+    const load = () => api.fetchOrders().then(setOrders).catch(() => {});
+    load();
+    const interval = setInterval(load, 5000);
+    return () => clearInterval(interval);
+  }, [kitchenAuth]);
 
   const addToCart = useCallback((item: MenuItem) => {
     setCart(prev => {
@@ -38,24 +56,37 @@ export default function Index() {
     setCart(prev => prev.map(c => c.item.id === id ? { ...c, quantity: c.quantity + 1 } : c));
   }, []);
 
-  const placeOrder = useCallback(() => {
-    if (cart.length === 0) return;
-    const order: Order = {
-      id: Date.now().toString(),
-      items: [...cart],
-      total: cart.reduce((s, c) => s + c.item.price * c.quantity, 0),
-      status: 'new',
-      createdAt: new Date(),
-    };
-    setOrders(prev => [order, ...prev]);
-    setCurrentOrder(order);
-    setCart([]);
-    setScreen('status');
-  }, [cart]);
+  const handlePlaceOrder = useCallback(async () => {
+    if (cart.length === 0 || placingOrder) return;
+    setPlacingOrder(true);
+    try {
+      const total = cart.reduce((s, c) => s + c.item.price * c.quantity, 0);
+      const { id, code } = await api.placeOrder(cart, total);
+      const order: Order = {
+        id,
+        code,
+        items: [...cart],
+        total,
+        status: 'new',
+        createdAt: new Date(),
+      };
+      setCurrentOrder(order);
+      setCart([]);
+      setScreen('status');
+    } finally {
+      setPlacingOrder(false);
+    }
+  }, [cart, placingOrder]);
 
-  const updateOrderStatus = useCallback((orderId: string, status: Order['status']) => {
+  const refreshCurrentOrder = useCallback(async () => {
+    if (!currentOrder) return;
+    const updated = await api.fetchOrderById(currentOrder.id);
+    if (updated) setCurrentOrder(updated);
+  }, [currentOrder]);
+
+  const updateOrderStatus = useCallback(async (orderId: string, status: Order['status']) => {
+    await api.updateOrderStatus(orderId, status);
     setOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
-    setCurrentOrder(prev => prev && prev.id === orderId ? { ...prev, status } : prev);
   }, []);
 
   const handleKitchenLogin = useCallback((password: string): boolean => {
@@ -77,13 +108,28 @@ export default function Index() {
     else setScreen('kitchen-login');
   }, [kitchenAuth]);
 
-  const handleMenuUpdate = useCallback((newMenu: MenuItem[]) => {
+  const handleMenuUpdate = useCallback(async (
+    newMenu: MenuItem[],
+    changedItem?: MenuItem,
+    action?: 'upsert' | 'toggle' | 'delete'
+  ) => {
     setMenu(newMenu);
+    if (changedItem && action === 'upsert') await api.upsertMenuItem(changedItem);
+    if (changedItem && action === 'toggle') await api.toggleMenuItem(changedItem.id);
+    if (changedItem && action === 'delete') await api.deleteMenuItem(changedItem.id);
   }, []);
 
   if (screen === 'menu') {
     return (
       <div className="relative">
+        {menuLoading && (
+          <div className="fixed inset-0 bg-[#0D0D0D] z-50 flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-5xl mb-4 animate-pulse">☕</div>
+              <p className="text-white/40 font-golos">Загружаем меню...</p>
+            </div>
+          </div>
+        )}
         <MenuScreen
           menu={menu}
           cart={cart}
@@ -103,7 +149,7 @@ export default function Index() {
             className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#1A1A1A] border border-white/10 text-white/60 hover:text-white px-4 py-3 rounded-2xl text-xs font-golos transition-all duration-200"
           >
             <span className="w-2 h-2 bg-[#FF6B2B] rounded-full animate-pulse"></span>
-            Статус заказа #{currentOrder.id.slice(-3)}
+            Заказ #{currentOrder.code}
           </button>
         )}
       </div>
@@ -118,17 +164,18 @@ export default function Index() {
         onBack={() => setScreen('menu')}
         onRemove={removeFromCart}
         onAdd={addOneToCart}
-        onPlaceOrder={placeOrder}
+        onPlaceOrder={handlePlaceOrder}
+        placing={placingOrder}
       />
     );
   }
 
   if (screen === 'status' && currentOrder) {
-    const liveOrder = orders.find(o => o.id === currentOrder.id) || currentOrder;
     return (
       <StatusScreen
-        order={liveOrder}
+        order={currentOrder}
         onNewOrder={() => { setCurrentOrder(null); setScreen('menu'); }}
+        onRefresh={refreshCurrentOrder}
       />
     );
   }

@@ -8,9 +8,10 @@ interface CartScreenProps {
   onAdd: (id: string) => void;
   onPlaceOrder: () => void;
   lastOrder: Order | null;
+  placing?: boolean;
 }
 
-export default function CartScreen({ cart, onBack, onRemove, onAdd, onPlaceOrder, lastOrder }: CartScreenProps) {
+export default function CartScreen({ cart, onBack, onRemove, onAdd, onPlaceOrder, lastOrder, placing }: CartScreenProps) {
   const total = cart.reduce((s, c) => s + c.item.price * c.quantity, 0);
 
   return (
@@ -97,10 +98,11 @@ export default function CartScreen({ cart, onBack, onRemove, onAdd, onPlaceOrder
           <div className="max-w-2xl mx-auto">
             <button
               onClick={onPlaceOrder}
-              className="w-full bg-[#FF6B2B] hover:bg-[#e55a1f] text-white py-4 rounded-2xl font-oswald text-xl font-bold tracking-wide transition-all duration-200 hover:scale-[1.02] shadow-xl shadow-orange-900/30 flex items-center justify-center gap-3"
+              disabled={placing}
+              className="w-full bg-[#FF6B2B] hover:bg-[#e55a1f] disabled:opacity-60 disabled:cursor-not-allowed text-white py-4 rounded-2xl font-oswald text-xl font-bold tracking-wide transition-all duration-200 hover:scale-[1.02] shadow-xl shadow-orange-900/30 flex items-center justify-center gap-3"
             >
-              <Icon name="CheckCircle" size={22} />
-              Оформить заказ
+              <Icon name={placing ? 'Loader' : 'CheckCircle'} size={22} className={placing ? 'animate-spin' : ''} />
+              {placing ? 'Отправляем заказ...' : 'Оформить заказ'}
             </button>
             <p className="text-center text-white/30 text-xs mt-3 font-golos">
               Нажимая «Оформить», вы подтверждаете заказ

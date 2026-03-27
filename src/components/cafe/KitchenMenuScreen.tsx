@@ -5,7 +5,7 @@ import Icon from '@/components/ui/icon';
 
 interface KitchenMenuScreenProps {
   menu: MenuItem[];
-  onUpdate: (menu: MenuItem[]) => void;
+  onUpdate: (menu: MenuItem[], changedItem?: MenuItem, action?: 'upsert' | 'toggle' | 'delete') => void;
   onBack: () => void;
 }
 
@@ -41,19 +41,24 @@ export default function KitchenMenuScreen({ menu, onUpdate, onBack }: KitchenMen
     if (!form.name || !form.price) return;
     const updated = form as MenuItem;
     if (isNew) {
-      onUpdate([...menu, updated]);
+      onUpdate([...menu, updated], updated, 'upsert');
     } else {
-      onUpdate(menu.map(m => m.id === updated.id ? updated : m));
+      onUpdate(menu.map(m => m.id === updated.id ? updated : m), updated, 'upsert');
     }
     setEditing(null);
   };
 
   const toggleAvailable = (id: string) => {
-    onUpdate(menu.map(m => m.id === id ? { ...m, available: !m.available } : m));
+    const item = menu.find(m => m.id === id);
+    if (!item) return;
+    const toggled = { ...item, available: !item.available };
+    onUpdate(menu.map(m => m.id === id ? toggled : m), toggled, 'toggle');
   };
 
   const deleteItem = (id: string) => {
-    onUpdate(menu.filter(m => m.id !== id));
+    const item = menu.find(m => m.id === id);
+    if (!item) return;
+    onUpdate(menu.filter(m => m.id !== id), item, 'delete');
   };
 
   return (

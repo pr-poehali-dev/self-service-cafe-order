@@ -1,0 +1,11 @@
+{
+  "tests": [
+    {
+      "name": "GET order by code (not found)",
+      "method": "GET",
+      "path": "/?code=9999",
+      "expectedStatus": 404,
+      "bodyMatcher": "none"
+    }
+  ]
+}

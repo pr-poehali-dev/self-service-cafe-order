@@ -15,11 +15,11 @@ export interface CartItem {
 
 export interface Order {
   id: string;
+  code: string;
   items: CartItem[];
   total: number;
   status: 'new' | 'cooking' | 'ready' | 'done';
-  createdAt: Date;
-  tableNumber?: number;
+  createdAt: Date | string;
 }
 
 export type Screen = 'menu' | 'cart' | 'status' | 'kitchen' | 'kitchen-login' | 'kitchen-menu';

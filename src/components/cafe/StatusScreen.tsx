@@ -1,38 +1,53 @@
+import { useEffect } from 'react';
 import { Order } from '@/types/cafe';
 import Icon from '@/components/ui/icon';
 
 interface StatusScreenProps {
   order: Order;
   onNewOrder: () => void;
+  onRefresh: () => void;
 }
 
 const STEPS = [
   { key: 'new', label: 'Принят', icon: 'ClipboardCheck', desc: 'Заказ получен кухней' },
   { key: 'cooking', label: 'Готовится', icon: 'ChefHat', desc: 'Повар приступил к работе' },
   { key: 'ready', label: 'Готово!', icon: 'Bell', desc: 'Можете забирать заказ' },
-] as const;
+];
 
 const STATUS_ORDER = ['new', 'cooking', 'ready', 'done'];
 
-export default function StatusScreen({ order, onNewOrder }: StatusScreenProps) {
+export default function StatusScreen({ order, onNewOrder, onRefresh }: StatusScreenProps) {
   const currentIdx = STATUS_ORDER.indexOf(order.status);
+
+  useEffect(() => {
+    if (order.status === 'done') return;
+    const interval = setInterval(onRefresh, 5000);
+    return () => clearInterval(interval);
+  }, [order.status, onRefresh]);
 
   return (
     <div className="min-h-screen bg-[#0D0D0D] flex flex-col items-center justify-center px-6 py-12">
       <div className="w-full max-w-md">
-        {/* Order number */}
+        {/* Code block */}
         <div className="text-center mb-10 animate-fade-in" style={{ opacity: 0 }}>
-          <p className="text-white/40 font-golos text-sm uppercase tracking-widest mb-2">Номер заказа</p>
-          <h1 className="font-oswald text-7xl font-bold text-[#FF6B2B] neon-text">
-            #{order.id.slice(-3)}
-          </h1>
-          <p className="text-white/30 text-xs mt-2 font-golos">
+          <p className="text-white/40 font-golos text-sm uppercase tracking-widest mb-3">Ваш код заказа</p>
+          <div className="inline-flex items-center gap-1 bg-[#FF6B2B]/10 border border-[#FF6B2B]/30 rounded-3xl px-8 py-4 mb-3">
+            {order.code.split('').map((digit, i) => (
+              <span key={i} className="font-oswald text-6xl font-bold text-[#FF6B2B] leading-none neon-text w-12 text-center">
+                {digit}
+              </span>
+            ))}
+          </div>
+          <p className="text-white/30 text-xs font-golos">
+            Запомните код — по нему заберёте заказ
+          </p>
+          <p className="text-white/20 text-xs mt-1 font-golos">
             {new Date(order.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
           </p>
         </div>
 
         {/* Status steps */}
-        <div className="space-y-3 mb-10">
+        <div className="space-y-3 mb-8">
           {STEPS.map((step, i) => {
             const stepIdx = STATUS_ORDER.indexOf(step.key);
             const isDone = currentIdx > stepIdx;
@@ -72,8 +87,8 @@ export default function StatusScreen({ order, onNewOrder }: StatusScreenProps) {
           })}
         </div>
 
-        {/* Order items summary */}
-        <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl p-5 mb-8 animate-fade-in" style={{ animationDelay: '0.4s', opacity: 0 }}>
+        {/* Order items */}
+        <div className="bg-[#1A1A1A] border border-white/5 rounded-2xl p-5 mb-6 animate-fade-in" style={{ animationDelay: '0.4s', opacity: 0 }}>
           <p className="text-white/40 text-xs font-golos uppercase tracking-widest mb-3">Состав заказа</p>
           <div className="space-y-2">
             {order.items.map(c => (
@@ -94,8 +109,15 @@ export default function StatusScreen({ order, onNewOrder }: StatusScreenProps) {
           <div className="bg-[#6BCB77]/10 border border-[#6BCB77]/30 rounded-2xl p-5 mb-6 text-center animate-bounce-in">
             <p className="text-5xl mb-2">🎉</p>
             <p className="font-oswald text-[#6BCB77] text-xl font-bold">Заказ готов!</p>
-            <p className="text-white/60 text-sm font-golos mt-1">Подойдите к стойке за вашим заказом</p>
+            <p className="text-white/60 text-sm font-golos mt-1">Назовите код <strong className="text-[#6BCB77]">{order.code}</strong> на стойке</p>
           </div>
+        )}
+
+        {order.status !== 'done' && (
+          <p className="text-center text-white/20 text-xs font-golos mb-4 flex items-center justify-center gap-1.5">
+            <span className="w-1.5 h-1.5 bg-[#FF6B2B] rounded-full animate-pulse"></span>
+            Статус обновляется автоматически
+          </p>
         )}
 
         <button
