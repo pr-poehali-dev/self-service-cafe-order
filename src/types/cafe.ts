@@ -22,4 +22,4 @@ export interface Order {
   createdAt: Date | string;
 }
 
-export type Screen = 'menu' | 'cart' | 'status' | 'kitchen' | 'kitchen-login' | 'kitchen-menu';
+export type Screen = 'menu' | 'cart' | 'status' | 'track' | 'kitchen' | 'kitchen-login' | 'kitchen-menu';

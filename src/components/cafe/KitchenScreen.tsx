@@ -152,9 +152,8 @@ export default function KitchenScreen({ orders, onUpdateStatus, onGoToMenu, onLo
                   style={{ animationDelay: `${i * 0.06}s`, opacity: 0 }}
                 >
                   {/* Order header */}
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center justify-between mb-3">
                     <div className="flex items-center gap-2">
-                      <span className="font-oswald text-2xl font-bold text-white">#{order.id.slice(-3)}</span>
                       {order.status === 'new' && (
                         <span className="relative flex w-2.5 h-2.5">
                           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#FFD93D] opacity-75"></span>
@@ -166,6 +165,21 @@ export default function KitchenScreen({ orders, onUpdateStatus, onGoToMenu, onLo
                       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot}`}></span>
                       {cfg.label}
                     </span>
+                  </div>
+
+                  {/* Customer code — big */}
+                  <div className="flex items-end justify-between mb-4">
+                    <div>
+                      <p className="text-white/30 text-[10px] font-golos uppercase tracking-widest mb-0.5">Код клиента</p>
+                      <div className="flex gap-1">
+                        {order.code.split('').map((digit, di) => (
+                          <span key={di} className="font-oswald text-4xl font-bold text-[#FF6B2B] leading-none w-9 text-center bg-[#FF6B2B]/10 rounded-lg py-1">
+                            {digit}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                    <span className="font-oswald font-bold text-white/50 text-sm">#{order.id.slice(-4)}</span>
                   </div>
 
                   {/* Time */}

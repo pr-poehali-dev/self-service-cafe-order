@@ -8,6 +8,7 @@ import StatusScreen from '@/components/cafe/StatusScreen';
 import KitchenLogin from '@/components/cafe/KitchenLogin';
 import KitchenScreen from '@/components/cafe/KitchenScreen';
 import KitchenMenuScreen from '@/components/cafe/KitchenMenuScreen';
+import TrackScreen from '@/components/cafe/TrackScreen';
 import Icon from '@/components/ui/icon';
 
 export default function Index() {
@@ -143,13 +144,21 @@ export default function Index() {
           <Icon name="ChefHat" size={16} className="text-white/30 group-hover:text-[#FF6B2B] transition-colors" />
           Панель кухни
         </button>
+        {/* Track order button — always visible */}
+        <button
+          onClick={() => setScreen('track')}
+          className="fixed bottom-6 right-6 z-50 flex items-center gap-2 bg-[#1A1A1A] hover:bg-[#2A2A2A] border border-white/10 text-white/50 hover:text-white px-4 py-3 rounded-2xl text-xs font-golos transition-all duration-200 group"
+        >
+          <Icon name="Search" size={15} className="text-white/30 group-hover:text-[#FF6B2B] transition-colors" />
+          Отследить заказ
+        </button>
         {currentOrder && (
           <button
             onClick={() => setScreen('status')}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#1A1A1A] border border-white/10 text-white/60 hover:text-white px-4 py-3 rounded-2xl text-xs font-golos transition-all duration-200"
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-[#FF6B2B]/10 border border-[#FF6B2B]/30 text-[#FF6B2B] hover:bg-[#FF6B2B]/20 px-4 py-3 rounded-2xl text-xs font-golos transition-all duration-200"
           >
             <span className="w-2 h-2 bg-[#FF6B2B] rounded-full animate-pulse"></span>
-            Заказ #{currentOrder.code}
+            Мой заказ · {currentOrder.code}
           </button>
         )}
       </div>
@@ -178,6 +187,10 @@ export default function Index() {
         onRefresh={refreshCurrentOrder}
       />
     );
+  }
+
+  if (screen === 'track') {
+    return <TrackScreen onBack={() => setScreen('menu')} />;
   }
 
   if (screen === 'kitchen-login') {
